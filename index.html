@@ -422,37 +422,11 @@
         }
 
         window.addEventListener('keydown', (e) => {
-            let touchStartX = 0;
-let touchStartY = 0;
-
-const touchArea = document.getElementById('touch-area');
-
-touchArea.addEventListener('touchstart', (e) => {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-}, { passive: false });
-
-touchArea.addEventListener('touchend', (e) => {
-    let touchEndX = e.changedTouches[0].clientX;
-    let touchEndY = e.changedTouches[0].clientY;
-
-    let diffX = touchEndX - touchStartX;
-    let diffY = touchEndY - touchStartY;
-
-    // Sirf wahi move count hoga jahan swipe zyada bada ho
-    if (Math.abs(diffX) > Math.abs(diffY)) {
-        if (Math.abs(diffX) > 30) { // Threshold
-            handleMove(diffX > 0 ? 1 : -1, 0);
-        }
-    } else {
-        if (Math.abs(diffY) > 30) {
-            handleMove(0, diffY > 0 ? 1 : -1);
-        }
-    }
-}, { passive: false });
+            if (e.key === 'ArrowUp' || e.key === 'w') handleMove(0, -1);
+            if (e.key === 'ArrowDown' || e.key === 's') handleMove(0, 1);
+            if (e.key === 'ArrowLeft' || e.key === 'a') handleMove(-1, 0);
+            if (e.key === 'ArrowRight' || e.key === 'd') handleMove(1, 0);
+        });
     </script>
-    <head>
-    <link rel="stylesheet" href="style.css">
-</head>
 </body>
 </html>
