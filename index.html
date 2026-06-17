@@ -173,15 +173,9 @@
         </div>
 
         <!-- 🕹️ New Modern Touch Pad Layout -->
-        <div id="dpad-container">
-            <div id="dpad-center">🎮</div>
-            <div class="dbtn" id="up" onclick="handleMove(0, -1)">▲</div>
-            <div class="dbtn" id="left" onclick="handleMove(-1, 0)">◀</div>
-            <div class="dbtn" id="right" onclick="handleMove(1, 0)">▶</div>
-            <div class="dbtn" id="down" onclick="handleMove(0, 1)">▼</div>
-        </div>
-    </div>
-
+        <div id="touch-area" style="width: 100%; height: 200px; touch-action: none;">
+    <div style="text-align: center; color: #555; padding-top: 80px;">SWIPE ANYWHERE TO MOVE</div>
+</div>
     <script>
         let currentLevel = 1;
         let map = [];
@@ -428,11 +422,37 @@
         }
 
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp' || e.key === 'w') handleMove(0, -1);
-            if (e.key === 'ArrowDown' || e.key === 's') handleMove(0, 1);
-            if (e.key === 'ArrowLeft' || e.key === 'a') handleMove(-1, 0);
-            if (e.key === 'ArrowRight' || e.key === 'd') handleMove(1, 0);
-        });
+            let touchStartX = 0;
+let touchStartY = 0;
+
+const touchArea = document.getElementById('touch-area');
+
+touchArea.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+}, { passive: false });
+
+touchArea.addEventListener('touchend', (e) => {
+    let touchEndX = e.changedTouches[0].clientX;
+    let touchEndY = e.changedTouches[0].clientY;
+
+    let diffX = touchEndX - touchStartX;
+    let diffY = touchEndY - touchStartY;
+
+    // Sirf wahi move count hoga jahan swipe zyada bada ho
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+        if (Math.abs(diffX) > 30) { // Threshold
+            handleMove(diffX > 0 ? 1 : -1, 0);
+        }
+    } else {
+        if (Math.abs(diffY) > 30) {
+            handleMove(0, diffY > 0 ? 1 : -1);
+        }
+    }
+}, { passive: false });
     </script>
+    <head>
+    <link rel="stylesheet" href="style.css">
+</head>
 </body>
 </html>
