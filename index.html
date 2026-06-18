@@ -177,6 +177,7 @@
     <div style="text-align: center; color: #555; padding-top: 80px;">SWIPE ANYWHERE TO MOVE</div>
 </div>
   <script>
+  let totalCoins = parseInt(localStorage.getItem("userCoins")) || 0; // Coins save rahenge
     let currentLevel = 1;
     let map = [];
     const gridSize = 9;
@@ -371,49 +372,68 @@
         }
     }
 
-   function movePoliceLogic() {
+  function movePoliceLogic() {
     if (gameOver) return;
 
-    // 1. Agar police Red Dot (P) par aayi, toh rageTurns start karein
+    // Sirf jab police 'P' tile par aaye, tabhi rage mode activate ho
     if (map[policePos.y] && map[policePos.y][policePos.x] === 'P') {
-        map[policePos.y][policePos.x] = 0; // Dot khatam ho gaya
-        rageTurns = 15; // 15 turns tak speed fast rahegi
+        map[policePos.y][policePos.x] = 0; // Red point hat gaya
+        rageTurns = 2; // Speed badh gayi
     }
 
-    // 2. Movement logic (Police chor ka picha karti hai)
+    // Police ka movement logic...
     let diffX = chorPos.x - policePos.x;
     let diffY = chorPos.y - policePos.y;
     
-    // Sirf tab move kare jab freeze na ho
     if (freezeTurns <= 0) {
         policePos.x += (Math.abs(diffX) > Math.abs(diffY)) ? Math.sign(diffX) : 0;
         policePos.y += (Math.abs(diffX) > Math.abs(diffY)) ? 0 : Math.sign(diffY);
     }
 
-    // Rage khatam karne ka counter
+    // Rage counter kam karna
     if (rageTurns > 0) rageTurns--;
 
     checkCollision();
     drawMap();
 }
 
-    function checkCollision() {
-        if (policePos.x === chorPos.x && policePos.y === chorPos.y) {
-            statusElement.innerText = "🚨 GAME OVER!";
-            gameOver = true;
+   function checkCollision() {
+    if (policePos.x === chorPos.x && policePos.y === chorPos.y) {
+        // Revive check (Cost: 100 coins)
+        if (totalCoins >= 100) {
+            let useCoins = confirm("🚨 Pakde gaye! Kya 100 coins dekar Revive karna hai?");
+            if (useCoins) {
+                totalCoins -= 100;
+                localStorage.setItem("userCoins", totalCoins); // Coin update save
+                policePos = { x: 7, y: 7 }; // Police wapas start position par
+                updateStatus(); // Coins aur score update
+                return; // Game Over nahi hoga
+            }
         }
+        
+        // Agar coins nahi hain ya revive nahi kiya
+        gameOver = true;
+        statusElement.innerText = "🚨 GAME OVER! Total Coins: " + totalCoins;
     }
+}
 
     function updateStatus() {
-        statusElement.innerText = freezeTurns > 0 ? `❄️ Police Freeze: ${freezeTurns}` : `💎: ${diamondsLeft} | Level: ${currentLevel}`;
-    }
+    let rageText = (rageTurns > 0) ? " | 😡 RAGE!" : "";
+    statusElement.innerText = `💎: ${diamondsLeft} | 💰: ${totalCoins}${rageText} | Lvl: ${currentLevel}`;
+}
 
     function nextLevel() {
-        currentLevel++;
-        saveProgress(currentLevel);
-        startLevel(currentLevel);
-    }
-
+    // Reward Logic: Har level par 50 + (level number * 10) coins milenge
+    let reward = 50 + (currentLevel * 10);
+    totalCoins += reward;
+    
+    // Coins save karna zaroori hai
+    localStorage.setItem("userCoins", totalCoins);
+    
+    currentLevel++;
+    saveProgress(currentLevel); // Level progress save
+    startLevel(currentLevel);
+}
     function resetGame() { startLevel(currentLevel); }
 </script>
 </body>
