@@ -140,6 +140,31 @@
     </style>
 </head>
 <body>
+<style>
+  /* Button ko upar rakhne ke liye */
+  .ui-buttons {
+    position: relative;
+    z-index: 10; /* Buttons touch-area se upar rahenge */
+  }
+
+  /* Touch area ko piche aur active rakhne ke liye */
+  #touch-area {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    touch-action: none; /* Scroll rokne ke liye */
+    z-index: 5;         /* Buttons se niche */
+    pointer-events: auto; /* Swipe detect karne ke liye */
+  }
+
+  /* Magic Trick: Buttons par click kaam kare iske liye */
+  .ui-buttons button {
+    pointer-events: auto;
+    z-index: 15;
+  }
+</style>
 
     <!-- 🚪 Professional Start Screen -->
     <div id="start-screen">
@@ -173,10 +198,12 @@
         
         <div id="grid"></div>
         
-        <div class="ui-buttons">
-            <button id="next-btn" class="action-btn" onclick="nextLevel()">Next Level ➔</button>
-            <button id="retry-btn" class="action-btn" onclick="resetGame()">🔄 Retry Level</button>
-        </div>
+       <div id="touch-area"></div>
+
+<div class="ui-buttons">
+    <button id="next-btn" class="action-btn" onclick="nextLevel()">Next Level ➔</button>
+    <button id="retry-btn" class="action-btn" onclick="resetGame()">🔄 Retry Level</button>
+</div>
 
         <!-- 🕹️ New Modern Touch Pad Layout -->
         <div id="touch-area" style="width: 100%; height: 100vh; touch-action: none; position: fixed; top: 0; left: 0;">
@@ -220,33 +247,32 @@
             if (e.key === 'ArrowLeft') handleMove(-1, 0);
             if (e.key === 'ArrowRight') handleMove(1, 0);
         });
-    // --- SWIPE LOGIC ---
-    let touchStartX = 0;
-    let touchStartY = 0;
-    const touchArea = document.getElementById('touch-area');
+   // --- SWIPE LOGIC ---
+let touchStartX = 0;
+let touchStartY = 0;
+const touchArea = document.getElementById('touch-area');
 
-    touchArea.addEventListener('touchstart', (e) => {
-        // Scroll rokne ke liye
-        e.preventDefault(); 
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-    }, { passive: false });
+touchArea.addEventListener('touchstart', (e) => {
+    // Buttons ko block mat karo, sirf swipe capture karo
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+}, { passive: true }); // Yahan 'true' karo taaki browser smooth chale
 
-    touchArea.addEventListener('touchend', (e) => {
-        // Scroll rokne ke liye
-        e.preventDefault(); 
-        let touchEndX = e.changedTouches[0].clientX;
-        let touchEndY = e.changedTouches[0].clientY;
-        let diffX = touchEndX - touchStartX;
-        let diffY = touchEndY - touchStartY;
+touchArea.addEventListener('touchend', (e) => {
+    let touchEndX = e.changedTouches[0].clientX;
+    let touchEndY = e.changedTouches[0].clientY;
+    let diffX = touchEndX - touchStartX;
+    let diffY = touchEndY - touchStartY;
 
-        // Threshold ko thoda control karna (30 is okay)
+    // Sirf tab trigger karo jab movement threshold se zyada ho
+    if (Math.abs(diffX) > 30 || Math.abs(diffY) > 30) {
         if (Math.abs(diffX) > Math.abs(diffY)) {
-            if (Math.abs(diffX) > 30) handleMove(diffX > 0 ? 1 : -1, 0);
+            handleMove(diffX > 0 ? 1 : -1, 0);
         } else {
-            if (Math.abs(diffY) > 30) handleMove(0, diffY > 0 ? 1 : -1);
+            handleMove(0, diffY > 0 ? 1 : -1);
         }
-    }, { passive: false });
+    }
+}, { passive: true });
 
     function startGame() {
         document.getElementById('start-screen').style.display = 'none';
