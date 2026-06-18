@@ -373,15 +373,35 @@
         rageTurns = 2; 
     }
 
-    // AI Logic (Chor ki taraf badhna)
     let diffX = Math.sign(chorPos.x - policePos.x);
     let diffY = Math.sign(chorPos.y - policePos.y);
 
-    // Agar X zyada door hai to X mein move, nahi to Y mein
+    // Tentative position (kahan police jana chahti hai)
+    let nextPX = policePos.x;
+    let nextPY = policePos.y;
+
+    // Decide move based on distance to Chor
     if (Math.abs(chorPos.x - policePos.x) > Math.abs(chorPos.y - policePos.y)) {
-        policePos.x += diffX;
+        nextPX += diffX;
     } else {
-        policePos.y += diffY;
+        nextPY += diffY;
+    }
+
+    // 🛡️ WALL COLLISION CHECK: Agar wahan diwar (1) nahi hai, tabhi move karo
+    if (map[nextPY] && map[nextPY][nextPX] !== 1) {
+        policePos.x = nextPX;
+        policePos.y = nextPY;
+    } else {
+        // Agar diwar hai, toh dusri direction try karo
+        if (nextPX !== policePos.x) { // X mein try kiya tha, ab Y try karo
+            if (map[policePos.y + diffY] && map[policePos.y + diffY][policePos.x] !== 1) {
+                policePos.y += diffY;
+            }
+        } else { // Y mein try kiya tha, ab X try karo
+            if (map[policePos.y][policePos.x + diffX] && map[policePos.y][policePos.x + diffX] !== 1) {
+                policePos.x += diffX;
+            }
+        }
     }
 }
 
