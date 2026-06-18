@@ -363,8 +363,7 @@
     drawMap();
     checkCollision();
 }
-
-  function movePoliceLogic() {
+function movePoliceLogic() {
     if (gameOver) return;
 
     // Rage trigger check
@@ -373,38 +372,31 @@
         rageTurns = 2; 
     }
 
-    let diffX = Math.sign(chorPos.x - policePos.x);
-    let diffY = Math.sign(chorPos.y - policePos.y);
+    let dx = Math.sign(chorPos.x - policePos.x);
+    let dy = Math.sign(chorPos.y - policePos.y);
 
-    // Tentative position (kahan police jana chahti hai)
-    let nextPX = policePos.x;
-    let nextPY = policePos.y;
+    // Try primary move (X axis pehle, phir Y)
+    let nextX = policePos.x + dx;
+    let nextY = policePos.y;
 
-    // Decide move based on distance to Chor
-    if (Math.abs(chorPos.x - policePos.x) > Math.abs(chorPos.y - policePos.y)) {
-        nextPX += diffX;
-    } else {
-        nextPY += diffY;
-    }
-
-    // 🛡️ WALL COLLISION CHECK: Agar wahan diwar (1) nahi hai, tabhi move karo
-    if (map[nextPY] && map[nextPY][nextPX] !== 1) {
-        policePos.x = nextPX;
-        policePos.y = nextPY;
-    } else {
-        // Agar diwar hai, toh dusri direction try karo
-        if (nextPX !== policePos.x) { // X mein try kiya tha, ab Y try karo
-            if (map[policePos.y + diffY] && map[policePos.y + diffY][policePos.x] !== 1) {
-                policePos.y += diffY;
-            }
-        } else { // Y mein try kiya tha, ab X try karo
-            if (map[policePos.y][policePos.x + diffX] && map[policePos.y][policePos.x + diffX] !== 1) {
-                policePos.x += diffX;
-            }
+    // Check agar X axis par move wall nahi hai
+    if (map[nextY] && map[nextY][nextX] !== 1) {
+        policePos.x = nextX;
+        policePos.y = nextY;
+    } 
+    // Agar X wali side wall hai, toh Y axis try karo
+    else {
+        nextX = policePos.x;
+        nextY = policePos.y + dy;
+        
+        // Check agar Y axis par move wall nahi hai
+        if (map[nextY] && map[nextY][nextX] !== 1) {
+            policePos.x = nextX;
+            policePos.y = nextY;
         }
+        // Agar dono taraf wall hai, toh police move nahi karegi (stuck)
     }
 }
-
    function checkCollision() {
     if (policePos.x === chorPos.x && policePos.y === chorPos.y) {
         // Revive check (Cost: 100 coins)
