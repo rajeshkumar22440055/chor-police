@@ -239,12 +239,15 @@
         let diamondCount = 2 + Math.min(Math.floor(levelNum / 20), 4);   
         
         let difficultyText = "VERY EASY";
-        if(levelNum > 5) difficultyText = "EASY";
-        if(levelNum > 20) difficultyText = "MEDIUM";
-        if(levelNum > 50) difficultyText = "HARD";
-        if(levelNum > 100) difficultyText = "VERY HARD";
-        if(levelNum > 300) difficultyText = "INSANE IMPOSSIBLE";
-        diffTag.innerText = difficultyText;
+policeSpeed = 2; // Initial speed
+
+if(levelNum > 5) { difficultyText = "EASY"; policeSpeed = 2.5; }
+if(levelNum > 20) { difficultyText = "MEDIUM"; policeSpeed = 3; }
+if(levelNum > 50) { difficultyText = "HARD"; policeSpeed = 4; }
+if(levelNum > 100) { difficultyText = "VERY HARD"; policeSpeed = 5.5; }
+if(levelNum > 300) { difficultyText = "INSANE IMPOSSIBLE"; policeSpeed = 8; }
+
+diffTag.innerText = difficultyText;
 
         let newMap = [];
         for (let r = 0; r < gridSize; r++) {
@@ -434,6 +437,31 @@ function movePoliceLogic() {
     startLevel(currentLevel);
 }
     function resetGame() { startLevel(currentLevel); }
+    // Jab Oil par pair pade
+function onOilSpillCollision() {
+    controlsReversed = true;
+    
+    // 3 seconds baad controls wapas normal ho jayenge
+    setTimeout(() => {
+        controlsReversed = false;
+    }, 3000); 
+}
+
+// Player movement function mein ye update karo
+function movePlayer(direction) {
+    let finalDirection = direction;
+
+    if (controlsReversed) {
+        // Agar Right dabaya toh Left jayega, aur agar Up toh Down
+        if (direction === 'left') finalDirection = 'right';
+        else if (direction === 'right') finalDirection = 'left';
+        else if (direction === 'up') finalDirection = 'down';
+        else if (direction === 'down') finalDirection = 'up';
+    }
+
+    // Ab finalDirection ka use karke character move karo
+    // ...
+}
 </script>
 </body>
 </html>
