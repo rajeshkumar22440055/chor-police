@@ -322,6 +322,19 @@
 
     function handleMove(dx, dy) {
         if (gameOver) return;
+        if (!gameOver) {
+        if (freezeTurns > 0) {
+            freezeTurns--;
+            updateStatus();
+            drawMap();
+        } else {
+            // Police ki speed yahan se control hoti hai
+            let speed = (rageTurns > 0) ? 60 : 150; 
+            setTimeout(movePoliceLogic, speed);
+            updateStatus();
+            drawMap();
+        }
+    }
         let nextX = chorPos.x + dx;
         let nextY = chorPos.y + dy;
         if (nextX < 0 || nextX >= gridSize || nextY < 0 || nextY >= gridSize || map[nextY][nextX] === 1) return;
@@ -358,18 +371,31 @@
         }
     }
 
-    function movePoliceLogic() {
-        if (gameOver) return;
-        let diffX = chorPos.x - policePos.x;
-        let diffY = chorPos.y - policePos.y;
-        let nextX = policePos.x + (Math.abs(diffX) > Math.abs(diffY) ? Math.sign(diffX) : 0);
-        let nextY = policePos.y + (Math.abs(diffX) > Math.abs(diffY) ? 0 : Math.sign(diffY));
+   function movePoliceLogic() {
+    if (gameOver) return;
 
-        if (map[nextY][nextX] !== 1 && map[nextY][nextX] !== 'E') {
-            policePos.x = nextX; policePos.y = nextY;
-        }
-        checkCollision();
+    // 1. Agar police Red Dot (P) par aayi, toh rageTurns start karein
+    if (map[policePos.y] && map[policePos.y][policePos.x] === 'P') {
+        map[policePos.y][policePos.x] = 0; // Dot khatam ho gaya
+        rageTurns = 15; // 15 turns tak speed fast rahegi
     }
+
+    // 2. Movement logic (Police chor ka picha karti hai)
+    let diffX = chorPos.x - policePos.x;
+    let diffY = chorPos.y - policePos.y;
+    
+    // Sirf tab move kare jab freeze na ho
+    if (freezeTurns <= 0) {
+        policePos.x += (Math.abs(diffX) > Math.abs(diffY)) ? Math.sign(diffX) : 0;
+        policePos.y += (Math.abs(diffX) > Math.abs(diffY)) ? 0 : Math.sign(diffY);
+    }
+
+    // Rage khatam karne ka counter
+    if (rageTurns > 0) rageTurns--;
+
+    checkCollision();
+    drawMap();
+}
 
     function checkCollision() {
         if (policePos.x === chorPos.x && policePos.y === chorPos.y) {
