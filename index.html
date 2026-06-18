@@ -176,290 +176,219 @@
         <div id="touch-area" style="width: 100%; height: 200px; touch-action: none;">
     <div style="text-align: center; color: #555; padding-top: 80px;">SWIPE ANYWHERE TO MOVE</div>
 </div>
-    <script>
-        let currentLevel = 1;
-        let map = [];
-        const gridSize = 9;
+  <script>
+    let currentLevel = 1;
+    let map = [];
+    const gridSize = 9;
+    
+    let chorPos = { x: 1, y: 1 };
+    let policePos = { x: 7, y: 7 };
+    let diamondsLeft = 0;
+    let gameOver = false;
+    let freezeTurns = 0;
+    let rageTurns = 0;
+
+    const gridElement = document.getElementById('grid');
+    const statusElement = document.getElementById('status');
+    const levelIndicator = document.getElementById('level-indicator');
+    const diffTag = document.getElementById('difficulty-tag');
+    const nextBtn = document.getElementById('next-btn');
+
+    // --- SAVE & LOAD LOGIC ---
+    function saveProgress(level) {
+        localStorage.setItem("savedChorPoliceLevel", level);
+    }
+
+    function getSavedLevel() {
+        let saved = localStorage.getItem("savedChorPoliceLevel");
+        return saved ? parseInt(saved) : 1;
+    }
+
+    // --- SWIPE LOGIC ---
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const touchArea = document.getElementById('touch-area');
+
+    touchArea.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: false });
+
+    touchArea.addEventListener('touchend', (e) => {
+        let touchEndX = e.changedTouches[0].clientX;
+        let touchEndY = e.changedTouches[0].clientY;
+        let diffX = touchEndX - touchStartX;
+        let diffY = touchEndY - touchStartY;
+
+        if (Math.abs(diffX) > Math.abs(diffY)) {
+            if (Math.abs(diffX) > 30) handleMove(diffX > 0 ? 1 : -1, 0);
+        } else {
+            if (Math.abs(diffY) > 30) handleMove(0, diffY > 0 ? 1 : -1);
+        }
+    }, { passive: false });
+
+    function startGame() {
+        document.getElementById('start-screen').style.display = 'none';
+        currentLevel = getSavedLevel();
+        startLevel(currentLevel);
+    }
+
+    function generateProceduralLevel(levelNum) {
+        let wallProbability = 0.10 + Math.min(levelNum * 0.003, 0.28); 
+        let diamondCount = 2 + Math.min(Math.floor(levelNum / 20), 4);   
         
-        let chorPos = { x: 1, y: 1 };
-        let policePos = { x: 7, y: 7 };
-        let diamondsLeft = 0;
-        let gameOver = false;
-        let freezeTurns = 0;
-        let rageTurns = 0;
+        let difficultyText = "VERY EASY";
+        if(levelNum > 5) difficultyText = "EASY";
+        if(levelNum > 20) difficultyText = "MEDIUM";
+        if(levelNum > 50) difficultyText = "HARD";
+        if(levelNum > 100) difficultyText = "VERY HARD";
+        if(levelNum > 300) difficultyText = "INSANE IMPOSSIBLE";
+        diffTag.innerText = difficultyText;
 
-        const gridElement = document.getElementById('grid');
-        const statusElement = document.getElementById('status');
-        const levelIndicator = document.getElementById('level-indicator');
-        const diffTag = document.getElementById('difficulty-tag');
-        const nextBtn = document.getElementById('next-btn');
+        let newMap = [];
+        for (let r = 0; r < gridSize; r++) {
+            let row = [];
+            for (let c = 0; c < gridSize; c++) {
+                row.push((r === 0 || r === gridSize - 1 || c === 0 || c === gridSize - 1) ? 1 : 0);
+            }
+            newMap.push(row);
+        }
 
-        // --- SWIPE LOGIC START ---
-        let touchStartX = 0;
-        let touchStartY = 0;
-        const touchArea = document.getElementById('touch-area');
+        chorPos = { x: 1, y: 1 };
+        policePos = { x: 7, y: 7 };
+        newMap[1][7] = 'E'; 
 
-        touchArea.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        }, { passive: false });
+        for (let r = 1; r < gridSize - 1; r++) {
+            for (let c = 1; c < gridSize - 1; c++) {
+                if ((r==1 && c==1) || (r==7 && c==7) || (r==1 && c==7) || (r==2 && c==1) || (r==1 && c==6)) continue;
+                if (Math.random() < wallProbability) newMap[r][c] = 1;
+            }
+        }
 
-        touchArea.addEventListener('touchend', (e) => {
-            let touchEndX = e.changedTouches[0].clientX;
-            let touchEndY = e.changedTouches[0].clientY;
-
-            let diffX = touchEndX - touchStartX;
-            let diffY = touchEndY - touchStartY;
-
-            // Sensitivity (30 pixels)
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                if (Math.abs(diffX) > 30) {
-                    handleMove(diffX > 0 ? 1 : -1, 0);
+        function placeItem(itemSymbol) {
+            let placed = false;
+            let attempts = 0;
+            while (!placed && attempts < 100) {
+                let rx = Math.floor(Math.random() * (gridSize - 2)) + 1;
+                let ry = Math.floor(Math.random() * (gridSize - 2)) + 1;
+                if (newMap[ry][rx] === 0 && !(rx === chorPos.x && ry === chorPos.y) && !(rx === policePos.x && ry === policePos.y)) {
+                    newMap[ry][rx] = itemSymbol;
+                    placed = true;
                 }
+                attempts++;
+            }
+        }
+
+        diamondsLeft = diamondCount;
+        for (let i = 0; i < diamondCount; i++) { placeItem('D'); }
+        placeItem('B'); placeItem('P'); 
+        if(levelNum > 25) placeItem('P'); 
+        if(levelNum > 60) placeItem('B');
+
+        return newMap;
+    }
+
+    function startLevel(levelNum) {
+        map = generateProceduralLevel(levelNum);
+        gameOver = false;
+        freezeTurns = 0;
+        rageTurns = 0;
+        levelIndicator.innerText = `LEVEL: ${levelNum}`;
+        nextBtn.style.display = "none";
+        updateStatus();
+        drawMap();
+    }
+
+    function drawMap() {
+        gridElement.innerHTML = '';
+        for (let r = 0; r < gridSize; r++) {
+            for (let c = 0; c < gridSize; c++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                if (map[r][c] === 1) cell.classList.add('wall');
+                if (map[r][c] === 'E') { cell.classList.add('exit'); cell.innerHTML = '🚪'; }
+                if (map[r][c] === 'D') { cell.innerHTML = '💎'; cell.classList.add('diamond'); }
+                if (map[r][c] === 'B') { cell.innerHTML = '🟢'; cell.classList.add('booster-chor'); }
+                if (map[r][c] === 'P') { cell.innerHTML = '🔴'; cell.classList.add('booster-police'); }
+                if (r === chorPos.y && c === chorPos.x) { cell.classList.add('chor'); cell.innerHTML = '👤'; } 
+                else if (r === policePos.y && c === policePos.x) {
+                    cell.classList.add('police');
+                    cell.innerHTML = freezeTurns > 0 ? '🥶' : (rageTurns > 0 ? '😡' : '👮');
+                }
+                gridElement.appendChild(cell);
+            }
+        }
+    }
+
+    function handleMove(dx, dy) {
+        if (gameOver) return;
+        let nextX = chorPos.x + dx;
+        let nextY = chorPos.y + dy;
+        if (nextX < 0 || nextX >= gridSize || nextY < 0 || nextY >= gridSize || map[nextY][nextX] === 1) return;
+        
+        chorPos.x = nextX;
+        chorPos.y = nextY;
+
+        if (map[chorPos.y][chorPos.x] === 'D') { map[chorPos.y][chorPos.x] = 0; diamondsLeft--; }
+        if (map[chorPos.y][chorPos.x] === 'B') { 
+            map[chorPos.y][chorPos.x] = 0; 
+            freezeTurns = 5; // Yahan 5 turns set kiya
+            rageTurns = 0; 
+        }
+        if (map[chorPos.y][chorPos.x] === 'P') { map[chorPos.y][chorPos.x] = 0; }
+
+        if (map[chorPos.y][chorPos.x] === 'E') {
+            if (diamondsLeft === 0) {
+                gameOver = true;
+                statusElement.innerText = "🎉 LEVEL JEET GAYE!";
+                nextBtn.style.display = "inline-block";
+                drawMap(); return;
+            }
+        }
+        
+        // Police movement logic
+        if (!gameOver) {
+            if(freezeTurns > 0) {
+                freezeTurns--;
             } else {
-                if (Math.abs(diffY) > 30) {
-                    handleMove(0, diffY > 0 ? 1 : -1);
-                }
+                movePoliceLogic();
             }
-        }, { passive: false });
-        // --- SWIPE LOGIC END ---
-
-        function startGame() {
-            document.getElementById('start-screen').style.display = 'none';
-            startLevel(currentLevel);
-        }
-
-        // ... (baki ka wahi purana functions generateProceduralLevel, startLevel, drawMap, handleMove, movePoliceLogic, etc. niche likhein)
-        // [Yahan apna purana baki ka code paste karein]
-
-        function generateProceduralLevel(levelNum) {
-            let wallProbability = 0.10 + Math.min(levelNum * 0.003, 0.28); 
-            let diamondCount = 2 + Math.min(Math.floor(levelNum / 20), 4);   
-            
-            let difficultyText = "VERY EASY";
-            if(levelNum > 5) difficultyText = "EASY";
-            if(levelNum > 20) difficultyText = "MEDIUM";
-            if(levelNum > 50) difficultyText = "HARD";
-            if(levelNum > 100) difficultyText = "VERY HARD";
-            if(levelNum > 300) difficultyText = "INSANE IMPOSSIBLE";
-            diffTag.innerText = difficultyText;
-
-            let newMap = [];
-            for (let r = 0; r < gridSize; r++) {
-                let row = [];
-                for (let c = 0; c < gridSize; c++) {
-                    if (r === 0 || r === gridSize - 1 || c === 0 || c === gridSize - 1) {
-                        row.push(1); 
-                    } else {
-                        row.push(0); 
-                    }
-                }
-                newMap.push(row);
-            }
-
-            chorPos = { x: 1, y: 1 };
-            policePos = { x: 7, y: 7 };
-            newMap[1][7] = 'E'; 
-
-            for (let r = 1; r < gridSize - 1; r++) {
-                for (let c = 1; c < gridSize - 1; c++) {
-                    if ((r==1 && c==1) || (r==7 && c==7) || (r==1 && c==7) || (r==2 && c==1) || (r==1 && c==6)) continue;
-                    if (Math.random() < wallProbability) {
-                        newMap[r][c] = 1;
-                    }
-                }
-            }
-
-            function placeItem(itemSymbol) {
-                let placed = false;
-                let attempts = 0;
-                while (!placed && attempts < 100) {
-                    let rx = Math.floor(Math.random() * (gridSize - 2)) + 1;
-                    let ry = Math.floor(Math.random() * (gridSize - 2)) + 1;
-                    if (newMap[ry][rx] === 0 && !(rx === chorPos.x && ry === chorPos.y) && !(rx === policePos.x && ry === policePos.y)) {
-                        newMap[ry][rx] = itemSymbol;
-                        placed = true;
-                    }
-                    attempts++;
-                }
-            }
-
-            diamondsLeft = diamondCount;
-            for (let i = 0; i < diamondCount; i++) { placeItem('D'); }
-            placeItem('B'); 
-            placeItem('P'); 
-            
-            if(levelNum > 25) placeItem('P'); 
-            if(levelNum > 60) placeItem('B');
-
-            return newMap;
-        }
-
-        function startLevel(levelNum) {
-            map = generateProceduralLevel(levelNum);
-            gameOver = false;
-            freezeTurns = 0;
-            rageTurns = 0;
-            
-            levelIndicator.innerText = `LEVEL: ${levelNum}`;
-            nextBtn.style.display = "none";
             updateStatus();
             drawMap();
         }
+    }
 
-        function drawMap() {
-            gridElement.innerHTML = '';
-            for (let r = 0; r < gridSize; r++) {
-                for (let c = 0; c < gridSize; c++) {
-                    const cell = document.createElement('div');
-                    cell.classList.add('cell');
+    function movePoliceLogic() {
+        if (gameOver) return;
+        let diffX = chorPos.x - policePos.x;
+        let diffY = chorPos.y - policePos.y;
+        let nextX = policePos.x + (Math.abs(diffX) > Math.abs(diffY) ? Math.sign(diffX) : 0);
+        let nextY = policePos.y + (Math.abs(diffX) > Math.abs(diffY) ? 0 : Math.sign(diffY));
 
-                    if (map[r][c] === 1) cell.classList.add('wall');
-                    if (map[r][c] === 'E') { cell.classList.add('exit'); cell.innerHTML = '🚪'; }
-                    if (map[r][c] === 'D') { cell.innerHTML = '💎'; cell.classList.add('diamond'); }
-                    if (map[r][c] === 'B') { cell.innerHTML = '🟢'; cell.classList.add('booster-chor'); }
-                    if (map[r][c] === 'P') { cell.innerHTML = '🔴'; cell.classList.add('booster-police'); }
-
-                    if (r === chorPos.y && c === chorPos.x) {
-                        cell.classList.add('chor'); cell.innerHTML = '👤';
-                    } else if (r === policePos.y && c === policePos.x) {
-                        cell.classList.add('police');
-                        if (freezeTurns > 0) cell.innerHTML = '🥶';
-                        else if (rageTurns > 0) cell.innerHTML = '😡';
-                        else cell.innerHTML = '👮';
-                    }
-
-                    gridElement.appendChild(cell);
-                }
-            }
+        if (map[nextY][nextX] !== 1 && map[nextY][nextX] !== 'E') {
+            policePos.x = nextX; policePos.y = nextY;
         }
+        checkCollision();
+    }
 
-        function handleMove(dx, dy) {
-            if (gameOver) return;
-
-            let nextX = chorPos.x + dx;
-            let nextY = chorPos.y + dy;
-
-            if (nextX < 0 || nextX >= gridSize || nextY < 0 || nextY >= gridSize) return;
-
-            if (map[nextY][nextX] !== 1) {
-                chorPos.x = nextX;
-                chorPos.y = nextY;
-
-                if (map[chorPos.y][chorPos.x] === 'D') {
-                    map[chorPos.y][chorPos.x] = 0;
-                    diamondsLeft--;
-                }
-                if (map[chorPos.y][chorPos.x] === 'B') {
-                    map[chorPos.y][chorPos.x] = 0;
-                    freezeTurns = 4; 
-                    rageTurns = 0;   
-                }
-                if (map[chorPos.y][chorPos.x] === 'P') {
-                    map[chorPos.y][chorPos.x] = 0;
-                }
-
-                if (map[chorPos.y][chorPos.x] === 'E') {
-                    if (diamondsLeft === 0) {
-                        gameOver = true;
-                        statusElement.style.color = "#00ffcc";
-                        statusElement.innerText = "🎉 LEVEL JEET GAYE! Agla level taiyar hai!";
-                        nextBtn.style.display = "inline-block";
-                        drawMap(); return;
-                    } else {
-                        statusElement.innerText = `❌ Rukiye! Pehle bache hue ${diamondsLeft} Diamonds 💎 uthayein!`;
-                        drawMap(); return;
-                    }
-                }
-
-                if (!gameOver) {
-                    if (freezeTurns > 0) {
-                        freezeTurns--;
-                        updateStatus();
-                        drawMap();
-                        checkCollision();
-                    } else if (rageTurns > 0) {
-                        rageTurns--;
-                        updateStatus();
-                        movePoliceLogic();
-                        if (!gameOver) setTimeout(movePoliceLogic, 130);
-                    } else {
-                        updateStatus();
-                        setTimeout(movePoliceLogic, 120);
-                    }
-                }
-            }
+    function checkCollision() {
+        if (policePos.x === chorPos.x && policePos.y === chorPos.y) {
+            statusElement.innerText = "🚨 GAME OVER!";
+            gameOver = true;
         }
+    }
 
-        function movePoliceLogic() {
-            if (gameOver || freezeTurns > 0) return;
+    function updateStatus() {
+        statusElement.innerText = freezeTurns > 0 ? `❄️ Police Freeze: ${freezeTurns}` : `💎: ${diamondsLeft} | Level: ${currentLevel}`;
+    }
 
-            let diffX = chorPos.x - policePos.x;
-            let diffY = chorPos.y - policePos.y;
-            let nextX = policePos.x;
-            let nextY = policePos.y;
+    function nextLevel() {
+        currentLevel++;
+        saveProgress(currentLevel);
+        startLevel(currentLevel);
+    }
 
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                nextX += Math.sign(diffX);
-                if (map[nextY][nextX] === 1 || map[nextY][nextX] === 'E') {
-                    nextX = policePos.x; nextY += Math.sign(diffY);
-                }
-            } else {
-                nextY += Math.sign(diffY);
-                if (map[nextY][nextX] === 1 || map[nextY][nextX] === 'E') {
-                    nextY = policePos.y; nextX += Math.sign(diffX);
-                }
-            }
-
-            if (map[nextY][nextX] !== 1 && map[nextY][nextX] !== 'E') {
-                policePos.x = nextX; policePos.y = nextY;
-            }
-
-            if (map[policePos.y][policePos.x] === 'P') {
-                map[policePos.y][policePos.x] = 0;
-                rageTurns = 4; 
-            }
-
-            drawMap();
-            checkCollision();
-        }
-
-        function checkCollision() {
-            if (policePos.x === chorPos.x && policePos.y === chorPos.y) {
-                statusElement.style.color = "#ff3366";
-                statusElement.innerText = "🚨 BSDK! TERE BS KI BAAT NAHI HAI BAAP KO BHEJ !";
-                gameOver = true;
-            }
-        }
-
-        function updateStatus() {
-            if (freezeTurns > 0) {
-                statusElement.style.color = "#00ffcc";
-                statusElement.innerText = `❄️ Police Freeze Hai! Turns: ${freezeTurns} | 💎: ${diamondsLeft}`;
-            } else if (rageTurns > 0) {
-                statusElement.style.color = "#ff3366";
-                statusElement.innerText = `😡 POLICE ANGRY! Speed Double | 💎: ${diamondsLeft}`;
-            } else {
-                statusElement.style.color = "#ff9900";
-                statusElement.innerText = `💎 Diamonds: ${diamondsLeft} | Chalein, dhyan se!`;
-            }
-        }
-
-        function nextLevel() {
-            currentLevel++;
-            startLevel(currentLevel);
-        }
-
-        function resetGame() {
-            startLevel(currentLevel);
-        }
-
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp' || e.key === 'w') handleMove(0, -1);
-            if (e.key === 'ArrowDown' || e.key === 's') handleMove(0, 1);
-            if (e.key === 'ArrowLeft' || e.key === 'a') handleMove(-1, 0);
-            if (e.key === 'ArrowRight' || e.key === 'd') handleMove(1, 0);
-        });
-    </script>
+    function resetGame() { startLevel(currentLevel); }
+</script>
 </body>
 </html>
