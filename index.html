@@ -261,30 +261,37 @@
         });
   const touchArea = document.getElementById('touch-area');
 
-// Swipe start
+let touchStartX = 0;
+let touchStartY = 0;
+const threshold = 20; // Sensitivity (kam number = zyada sensitive)
+
 touchArea.addEventListener('touchstart', (e) => {
-    // Agar touch kisi button par hua hai, toh swipe mat karo
-    if (e.target.classList.contains('action-btn')) {
-        return; 
-    }
+    // Agar click kisi button par hai, toh function se bahar nikal jao
+    if (e.target.closest('.action-btn')) return;
+
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
 }, { passive: false });
 
-// Swipe end
 touchArea.addEventListener('touchend', (e) => {
-    // Agar touch kisi button par hua tha, toh swipe mat karo
-    if (e.target.classList.contains('action-btn')) {
-        return;
-    }
-    
-    // ... baaki tumhara swipe logic ...
-    let diffX = e.changedTouches[0].clientX - touchStartX;
-    let diffY = e.changedTouches[0].clientY - touchStartY;
-    
-    if (Math.abs(diffX) > 30 || Math.abs(diffY) > 30) {
-        handleMove(Math.abs(diffX) > Math.abs(diffY) ? (diffX > 0 ? 1 : -1) : 0, 
-                   Math.abs(diffX) > Math.abs(diffY) ? 0 : (diffY > 0 ? 1 : -1));
+    // Agar click button par tha, toh move mat karo
+    if (e.target.closest('.action-btn')) return;
+
+    let touchEndX = e.changedTouches[0].clientX;
+    let touchEndY = e.changedTouches[0].clientY;
+
+    let diffX = touchEndX - touchStartX;
+    let diffY = touchEndY - touchStartY;
+
+    // Check karein ki movement threshold se zyada hai ya nahi
+    if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
+        if (Math.abs(diffX) > Math.abs(diffY)) {
+            // Horizontal movement
+            handleMove(diffX > 0 ? 1 : -1, 0); 
+        } else {
+            // Vertical movement
+            handleMove(0, diffY > 0 ? 1 : -1);
+        }
     }
 }, { passive: false });
 
