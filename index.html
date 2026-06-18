@@ -147,22 +147,34 @@
     z-index: 10; /* Buttons touch-area se upar rahenge */
   }
 
-  /* Touch area ko piche aur active rakhne ke liye */
+  <style>
+  /* 1. Touch area puri screen lega, lekin swipe capture karega */
   #touch-area {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100vh;
-    touch-action: none; /* Scroll rokne ke liye */
-    z-index: 5;         /* Buttons se niche */
-    pointer-events: auto; /* Swipe detect karne ke liye */
+    z-index: 1;
+    touch-action: none; /* Scroll band */
   }
 
-  /* Magic Trick: Buttons par click kaam kare iske liye */
-  .ui-buttons button {
-    pointer-events: auto;
-    z-index: 15;
+  /* 2. Buttons ko upar rakho aur click-able banao */
+  .ui-buttons {
+    position: fixed; /* Screen par fix */
+    bottom: 20px;    /* Neeche rakho */
+    left: 0;
+    width: 100%;
+    z-index: 10;     /* Touch-area ke upar */
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    pointer-events: auto; /* IMPORTANT: Buttons touch catch karenge */
+  }
+
+  .action-btn {
+    pointer-events: auto; /* Click kaam karega */
+    cursor: pointer;
   }
 </style>
 
@@ -247,32 +259,34 @@
             if (e.key === 'ArrowLeft') handleMove(-1, 0);
             if (e.key === 'ArrowRight') handleMove(1, 0);
         });
-   // --- SWIPE LOGIC ---
-let touchStartX = 0;
-let touchStartY = 0;
-const touchArea = document.getElementById('touch-area');
+  const touchArea = document.getElementById('touch-area');
 
+// Swipe start
 touchArea.addEventListener('touchstart', (e) => {
-    // Buttons ko block mat karo, sirf swipe capture karo
+    // Agar touch kisi button par hua hai, toh swipe mat karo
+    if (e.target.classList.contains('action-btn')) {
+        return; 
+    }
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
-}, { passive: true }); // Yahan 'true' karo taaki browser smooth chale
+}, { passive: false });
 
+// Swipe end
 touchArea.addEventListener('touchend', (e) => {
-    let touchEndX = e.changedTouches[0].clientX;
-    let touchEndY = e.changedTouches[0].clientY;
-    let diffX = touchEndX - touchStartX;
-    let diffY = touchEndY - touchStartY;
-
-    // Sirf tab trigger karo jab movement threshold se zyada ho
-    if (Math.abs(diffX) > 30 || Math.abs(diffY) > 30) {
-        if (Math.abs(diffX) > Math.abs(diffY)) {
-            handleMove(diffX > 0 ? 1 : -1, 0);
-        } else {
-            handleMove(0, diffY > 0 ? 1 : -1);
-        }
+    // Agar touch kisi button par hua tha, toh swipe mat karo
+    if (e.target.classList.contains('action-btn')) {
+        return;
     }
-}, { passive: true });
+    
+    // ... baaki tumhara swipe logic ...
+    let diffX = e.changedTouches[0].clientX - touchStartX;
+    let diffY = e.changedTouches[0].clientY - touchStartY;
+    
+    if (Math.abs(diffX) > 30 || Math.abs(diffY) > 30) {
+        handleMove(Math.abs(diffX) > Math.abs(diffY) ? (diffX > 0 ? 1 : -1) : 0, 
+                   Math.abs(diffX) > Math.abs(diffY) ? 0 : (diffY > 0 ? 1 : -1));
+    }
+}, { passive: false });
 
     function startGame() {
         document.getElementById('start-screen').style.display = 'none';
