@@ -5,6 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chor Police: Ultimate Arcade</title>
     <style>
+    /* Jab game chal raha ho, tab touch-area active rahe */
+<style>
+    /* 1. Touch Area: Poori screen cover karega, transparent hoga */
+    #touch-area {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        z-index: 1;
+        touch-action: none;
+        pointer-events: auto; /* Swipe capture karne ke liye */
+        background: transparent; /* Invisible banane ke liye */
+        opacity: 0;              /* Bilkul gayab ho jayega */
+    }
+
+    /* 2. Buttons: Touch area ke upar rahenge aur click catch karenge */
+    .ui-buttons {
+    position: fixed;
+    bottom: 30px;
+    width: 100%;
+    display: none; /* <--- Yeh buttons ko shuruat mein gayab kar dega */
+    justify-content: center;
+    gap: 20px;
+    z-index: 9999;   /* Sabse upar */
+    pointer-events: auto;    /* Click-able */
+    }
+
+    /* 3. Buttons ke liye extra safety */
+    .ui-buttons button {
+        pointer-events: auto;
+        cursor: pointer;
+    }
+}
     body {
     /* Neeche itni jagah chhod do jitni ad banner ki height hai */
     padding-bottom: 60px; 
@@ -140,43 +174,6 @@
     </style>
 </head>
 <body>
-<style>
-  /* Button ko upar rakhne ke liye */
-  .ui-buttons {
-    position: relative;
-    z-index: 10; /* Buttons touch-area se upar rahenge */
-  }
-
-  <style>
-  /* 1. Touch area puri screen lega, lekin swipe capture karega */
-  #touch-area {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100vh;
-    z-index: 1;
-    touch-action: none; /* Scroll band */
-  }
-
-  /* 2. Buttons ko upar rakho aur click-able banao */
-  .ui-buttons {
-    position: fixed; /* Screen par fix */
-    bottom: 20px;    /* Neeche rakho */
-    left: 0;
-    width: 100%;
-    z-index: 10;     /* Touch-area ke upar */
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    pointer-events: auto; /* IMPORTANT: Buttons touch catch karenge */
-  }
-
-  .action-btn {
-    pointer-events: auto; /* Click kaam karega */
-    cursor: pointer;
-  }
-</style>
 
     <!-- 🚪 Professional Start Screen -->
     <div id="start-screen">
@@ -210,12 +207,10 @@
         
         <div id="grid"></div>
         
-       <div id="touch-area"></div>
-
-<div class="ui-buttons">
-    <button id="next-btn" class="action-btn" onclick="nextLevel()">Next Level ➔</button>
-    <button id="retry-btn" class="action-btn" onclick="resetGame()">🔄 Retry Level</button>
-</div>
+        <div class="ui-buttons">
+            <button id="next-btn" class="action-btn" onclick="nextLevel()">Next Level ➔</button>
+            <button id="retry-btn" class="action-btn" onclick="resetGame()">🔄 Retry Level</button>
+        </div>
 
         <!-- 🕹️ New Modern Touch Pad Layout -->
         <div id="touch-area" style="width: 100%; height: 100vh; touch-action: none; position: fixed; top: 0; left: 0;">
@@ -259,41 +254,32 @@
             if (e.key === 'ArrowLeft') handleMove(-1, 0);
             if (e.key === 'ArrowRight') handleMove(1, 0);
         });
-  const touchArea = document.getElementById('touch-area');
+    // --- SWIPE LOGIC ---
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const touchArea = document.getElementById('touch-area');
 
-let touchStartX = 0;
-let touchStartY = 0;
-const threshold = 20; // Sensitivity (kam number = zyada sensitive)
-
+    // JS mein ye check zaroor hona chahiye
 touchArea.addEventListener('touchstart', (e) => {
-    // Agar click kisi button par hai, toh function se bahar nikal jao
-    if (e.target.closest('.action-btn')) return;
-
+    // Agar touch button par hai, toh swipe mat karo
+    if (e.target.tagName === 'BUTTON') return; 
+    
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
 }, { passive: false });
 
-touchArea.addEventListener('touchend', (e) => {
-    // Agar click button par tha, toh move mat karo
-    if (e.target.closest('.action-btn')) return;
+    touchArea.addEventListener('touchend', (e) => {
+        let touchEndX = e.changedTouches[0].clientX;
+        let touchEndY = e.changedTouches[0].clientY;
+        let diffX = touchEndX - touchStartX;
+        let diffY = touchEndY - touchStartY;
 
-    let touchEndX = e.changedTouches[0].clientX;
-    let touchEndY = e.changedTouches[0].clientY;
-
-    let diffX = touchEndX - touchStartX;
-    let diffY = touchEndY - touchStartY;
-
-    // Check karein ki movement threshold se zyada hai ya nahi
-    if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
         if (Math.abs(diffX) > Math.abs(diffY)) {
-            // Horizontal movement
-            handleMove(diffX > 0 ? 1 : -1, 0); 
+            if (Math.abs(diffX) > 30) handleMove(diffX > 0 ? 1 : -1, 0);
         } else {
-            // Vertical movement
-            handleMove(0, diffY > 0 ? 1 : -1);
+            if (Math.abs(diffY) > 30) handleMove(0, diffY > 0 ? 1 : -1);
         }
-    }
-}, { passive: false });
+    }, { passive: false });
 
     function startGame() {
         document.getElementById('start-screen').style.display = 'none';
