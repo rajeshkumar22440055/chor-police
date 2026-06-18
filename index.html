@@ -366,35 +366,32 @@
 function movePoliceLogic() {
     if (gameOver) return;
 
-    // Rage trigger check
+    // 1. Rage check
     if (map[policePos.y] && map[policePos.y][policePos.x] === 'P') {
         map[policePos.y][policePos.x] = 0;
         rageTurns = 2; 
     }
 
+    // 2. Chor ki taraf direction nikalna
     let dx = Math.sign(chorPos.x - policePos.x);
     let dy = Math.sign(chorPos.y - policePos.y);
 
-    // Try primary move (X axis pehle, phir Y)
+    // 3. Pehle try karo chor ki x-axis wali direction mein move karne ka
     let nextX = policePos.x + dx;
     let nextY = policePos.y;
 
-    // Check agar X axis par move wall nahi hai
     if (map[nextY] && map[nextY][nextX] !== 1) {
         policePos.x = nextX;
         policePos.y = nextY;
     } 
-    // Agar X wali side wall hai, toh Y axis try karo
+    // 4. Agar wahan diwar hai, toh try karo y-axis wali direction mein move karne ka
     else {
         nextX = policePos.x;
         nextY = policePos.y + dy;
-        
-        // Check agar Y axis par move wall nahi hai
         if (map[nextY] && map[nextY][nextX] !== 1) {
             policePos.x = nextX;
             policePos.y = nextY;
         }
-        // Agar dono taraf wall hai, toh police move nahi karegi (stuck)
     }
 }
    function checkCollision() {
