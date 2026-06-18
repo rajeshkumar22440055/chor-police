@@ -372,25 +372,27 @@ function movePoliceLogic() {
         rageTurns = 2; 
     }
 
-    // 2. Chor ki taraf direction nikalna
-    let dx = Math.sign(chorPos.x - policePos.x);
-    let dy = Math.sign(chorPos.y - policePos.y);
+    let dx = chorPos.x - policePos.x;
+    let dy = chorPos.y - policePos.y;
 
-    // 3. Pehle try karo chor ki x-axis wali direction mein move karne ka
-    let nextX = policePos.x + dx;
-    let nextY = policePos.y;
+    // 2. Possible moves ki list banayein
+    let moves = [];
+    if (dx > 0) moves.push({x: 1, y: 0});
+    if (dx < 0) moves.push({x: -1, y: 0});
+    if (dy > 0) moves.push({x: 0, y: 1});
+    if (dy < 0) moves.push({x: 0, y: -1});
 
-    if (map[nextY] && map[nextY][nextX] !== 1) {
-        policePos.x = nextX;
-        policePos.y = nextY;
-    } 
-    // 4. Agar wahan diwar hai, toh try karo y-axis wali direction mein move karne ka
-    else {
-        nextX = policePos.x;
-        nextY = policePos.y + dy;
-        if (map[nextY] && map[nextY][nextX] !== 1) {
-            policePos.x = nextX;
-            policePos.y = nextY;
+    // 3. Priority check: Pehle us direction mein dekho jahan chor hai, 
+    // agar wahan diwar hai, toh dusri direction try karo.
+    for (let move of moves) {
+        let nx = policePos.x + move.x;
+        let ny = policePos.y + move.y;
+
+        // Check boundary aur wall (1)
+        if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize && map[ny][nx] !== 1) {
+            policePos.x = nx;
+            policePos.y = ny;
+            return; // Ek valid move milte hi nikal jao
         }
     }
 }
