@@ -322,79 +322,67 @@
     }
 
     function handleMove(dx, dy) {
-        if (gameOver) return;
-        if (!gameOver) {
+    if (gameOver) return;
+
+    // Chor ka movement check
+    let nextX = chorPos.x + dx;
+    let nextY = chorPos.y + dy;
+    
+    if (nextX < 0 || nextX >= gridSize || nextY < 0 || nextY >= gridSize || map[nextY][nextX] === 1) return;
+    
+    chorPos.x = nextX;
+    chorPos.y = nextY;
+
+    // Items logic
+    if (map[chorPos.y][chorPos.x] === 'D') { map[chorPos.y][chorPos.x] = 0; diamondsLeft--; }
+    if (map[chorPos.y][chorPos.x] === 'B') { map[chorPos.y][chorPos.x] = 0; freezeTurns = 5; rageTurns = 0; }
+    if (map[chorPos.y][chorPos.x] === 'P') { map[chorPos.y][chorPos.x] = 0; }
+
+    // Win check
+    if (map[chorPos.y][chorPos.x] === 'E' && diamondsLeft === 0) {
+        gameOver = true;
+        statusElement.innerText = "🎉 LEVEL JEET GAYE!";
+        nextBtn.style.display = "inline-block";
+        drawMap(); return;
+    }
+    
+    // POLICE MOVE (Yahan se sync hoga)
+    if (!gameOver) {
         if (freezeTurns > 0) {
             freezeTurns--;
-            updateStatus();
-            drawMap();
         } else {
-            // Police ki speed yahan se control hoti hai
-            let speed = (rageTurns > 0) ? 60 : 400; 
-            setTimeout(movePoliceLogic, speed);
-            updateStatus();
-            drawMap();
-        }
-    }
-        let nextX = chorPos.x + dx;
-        let nextY = chorPos.y + dy;
-        if (nextX < 0 || nextX >= gridSize || nextY < 0 || nextY >= gridSize || map[nextY][nextX] === 1) return;
-        
-        chorPos.x = nextX;
-        chorPos.y = nextY;
-
-        if (map[chorPos.y][chorPos.x] === 'D') { map[chorPos.y][chorPos.x] = 0; diamondsLeft--; }
-        if (map[chorPos.y][chorPos.x] === 'B') { 
-            map[chorPos.y][chorPos.x] = 0; 
-            freezeTurns = 5; // Yahan 5 turns set kiya
-            rageTurns = 0; 
-        }
-        if (map[chorPos.y][chorPos.x] === 'P') { map[chorPos.y][chorPos.x] = 0; }
-
-        if (map[chorPos.y][chorPos.x] === 'E') {
-            if (diamondsLeft === 0) {
-                gameOver = true;
-                statusElement.innerText = "🎉 LEVEL JEET GAYE!";
-                nextBtn.style.display = "inline-block";
-                drawMap(); return;
+            movePoliceLogic(); // Normal move
+            if (rageTurns > 0) {
+                movePoliceLogic(); // Rage move (extra step)
+                rageTurns--;
             }
         }
-        
-        // Police movement logic
-        if (!gameOver) {
-            if(freezeTurns > 0) {
-                freezeTurns--;
-            } else {
-                movePoliceLogic();
-            }
-            updateStatus();
-            drawMap();
-        }
     }
+    
+    updateStatus();
+    drawMap();
+    checkCollision();
+}
 
   function movePoliceLogic() {
     if (gameOver) return;
 
-    // Sirf jab police 'P' tile par aaye, tabhi rage mode activate ho
+    // Rage trigger check
     if (map[policePos.y] && map[policePos.y][policePos.x] === 'P') {
-        map[policePos.y][policePos.x] = 0; // Red point hat gaya
-        rageTurns = 2; // Speed badh gayi
+        map[policePos.y][policePos.x] = 0;
+        rageTurns = 2; 
     }
 
-    // Police ka movement logic...
-    let diffX = chorPos.x - policePos.x;
-    let diffY = chorPos.y - policePos.y;
-    
-    if (freezeTurns <= 0) {
-        policePos.x += (Math.abs(diffX) > Math.abs(diffY)) ? Math.sign(diffX) : 0;
-        policePos.y += (Math.abs(diffX) > Math.abs(diffY)) ? 0 : Math.sign(diffY);
+    // AI Logic (Chor ki taraf badhna)
+    let diffX = Math.sign(chorPos.x - policePos.x);
+    let diffY = Math.sign(chorPos.y - policePos.y);
+
+    // Agar X zyada door hai to X mein move, nahi to Y mein
+    if (Math.abs(chorPos.x - policePos.x) > Math.abs(chorPos.y - policePos.y)) {
+        policePos.x += diffX;
+    } else {
+        policePos.y += diffY;
     }
-
-    // Rage counter kam karna
-    if (rageTurns > 0) rageTurns--;
-
-    checkCollision();
-    drawMap();
 }
 
    function checkCollision() {
