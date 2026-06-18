@@ -7,36 +7,20 @@
     <style>
     /* Jab game chal raha ho, tab touch-area active rahe */
 <style>
-    /* 1. Touch Area: Poori screen cover karega, transparent hoga */
+    /* 1. Touch Area: Poori screen cover karega */
     #touch-area {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100vh;
-        z-index: 1;
-        touch-action: none;
-        pointer-events: auto; /* Swipe capture karne ke liye */
-        background: transparent; /* Invisible banane ke liye */
-        opacity: 0;              /* Bilkul gayab ho jayega */
+        position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+        z-index: 1; pointer-events: none;
     }
 
-    /* 2. Buttons: Touch area ke upar rahenge aur click catch karenge */
-    .ui-buttons {
-    position: fixed;
-    bottom: 30px;
-    width: 100%;
-    display: none; /* <--- Yeh buttons ko shuruat mein gayab kar dega */
+   /* Buttons shuruat mein hidden rahenge */
+.ui-buttons { 
+    margin-top: 10px; 
+    display: none; /* <--- Ye line buttons ko start mein gayab rakhegi */
+    gap: 10px; 
+    height: 35px; 
     justify-content: center;
-    gap: 20px;
-    z-index: 9999;   /* Sabse upar */
-    pointer-events: auto;    /* Click-able */
-    }
-
-    /* 3. Buttons ke liye extra safety */
-    .ui-buttons button {
-        pointer-events: auto;
-        cursor: pointer;
+}
     }
 }
     body {
@@ -93,6 +77,15 @@
         .action-btn:active { transform: scale(0.95); background: #ff3366; }
         #next-btn { border-color: #00ffcc; box-shadow: 0 0 8px rgba(0, 255, 204, 0.3); display: none; color: #00ffcc; }
         #next-btn:active { background: #00ffcc; color: black; }
+        .ui-buttons {
+    margin-top: 10px;
+    display: none; /* Default hidden */
+    gap: 10px;
+    height: 35px;
+    justify-content: center;
+    pointer-events: auto; /* Clickable */
+    z-index: 9999;
+}
 
         /* 🕹️ NEW MODERN MOBILE CONTROLS STYLE */
         #dpad-container {
@@ -282,10 +275,14 @@ touchArea.addEventListener('touchstart', (e) => {
     }, { passive: false });
 
     function startGame() {
-        document.getElementById('start-screen').style.display = 'none';
-        currentLevel = getSavedLevel();
-        startLevel(currentLevel);
-    }
+    document.getElementById('start-screen').style.display = 'none';
+    
+    // YE LINE ADD KAREIN: Jab game shuru ho, tab buttons ko dikhao
+    document.querySelector('.ui-buttons').style.display = 'flex'; 
+    
+    currentLevel = getSavedLevel();
+    startLevel(currentLevel);
+}
 
     function generateProceduralLevel(levelNum) {
         let wallProbability = 0.10 + Math.min(levelNum * 0.003, 0.28); 
