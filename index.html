@@ -204,7 +204,13 @@
         let saved = localStorage.getItem("savedChorPoliceLevel");
         return saved ? parseInt(saved) : 1;
     }
-
+// --- KEYBOARD CONTROLS (PC) ---
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') handleMove(0, -1);
+            if (e.key === 'ArrowDown') handleMove(0, 1);
+            if (e.key === 'ArrowLeft') handleMove(-1, 0);
+            if (e.key === 'ArrowRight') handleMove(1, 0);
+        });
     // --- SWIPE LOGIC ---
     let touchStartX = 0;
     let touchStartY = 0;
@@ -245,7 +251,7 @@ if(levelNum > 5) { difficultyText = "EASY"; policeSpeed = 2.5; }
 if(levelNum > 20) { difficultyText = "MEDIUM"; policeSpeed = 3; }
 if(levelNum > 50) { difficultyText = "HARD"; policeSpeed = 4; }
 if(levelNum > 100) { difficultyText = "VERY HARD"; policeSpeed = 5.5; }
-if(levelNum > 300) { difficultyText = "INSANE IMPOSSIBLE"; policeSpeed = 8; }
+if(levelNum > 600) { difficultyText = "INSANE IMPOSSIBLE"; policeSpeed = 8; }
 
 diffTag.innerText = difficultyText;
 
@@ -262,12 +268,27 @@ diffTag.innerText = difficultyText;
         policePos = { x: 7, y: 7 };
         newMap[1][7] = 'E'; 
 
-        for (let r = 1; r < gridSize - 1; r++) {
-            for (let c = 1; c < gridSize - 1; c++) {
-                if ((r==1 && c==1) || (r==7 && c==7) || (r==1 && c==7) || (r==2 && c==1) || (r==1 && c==6)) continue;
-                if (Math.random() < wallProbability) newMap[r][c] = 1;
-            }
+        // Apne purane loop ki jagah ise paste karein
+for (let r = 1; r < gridSize - 1; r++) {
+    for (let c = 1; c < gridSize - 1; c++) {
+        
+        // 🛡️ SAFE ZONE: Chor aur Police ke starting area ko khali rakho
+        let isChorZone = (r <= 2 && c <= 2);
+        let isPoliceZone = (r >= 6 && c >= 6);
+        let isExit = (r === 1 && c === 7);
+
+        if (isChorZone || isPoliceZone || isExit) continue; 
+
+        // 🧱 RANDOM WALLS WITH TUNNEL PROTECTION
+        if (Math.random() < wallProbability) {
+            // Tunnel Protection: Agar upar aur niche diwar hai, toh beech mein mat lagao
+            // Isse player hamesha nikal sakega
+            if (newMap[r-1][c] === 1 && newMap[r+1][c] === 1) continue; 
+            
+            newMap[r][c] = 1;
         }
+    }
+}
 
         function placeItem(itemSymbol) {
             let placed = false;
@@ -349,18 +370,21 @@ diffTag.innerText = difficultyText;
         drawMap(); return;
     }
     
-    // POLICE MOVE (Yahan se sync hoga)
-    if (!gameOver) {
-        if (freezeTurns > 0) {
-            freezeTurns--;
-        } else {
-            movePoliceLogic(); // Normal move
-            if (rageTurns > 0) {
-                movePoliceLogic(); // Rage move (extra step)
-                rageTurns--;
-            }
+    // Police move section inside handleMove:
+if (!gameOver) {
+    if (freezeTurns > 0) {
+        freezeTurns--;
+    } else {
+        // Normal Move
+        movePoliceLogic();
+        
+        // Agar Rage mode mein hai, toh ek aur move chalao (total 2)
+        if (rageTurns > 0) {
+            movePoliceLogic();
+            rageTurns--; // Ek move khatam hua
         }
     }
+}
     
     updateStatus();
     drawMap();
